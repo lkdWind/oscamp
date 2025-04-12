@@ -1,0 +1,261 @@
+    [92;1mBuilding[0m App: lab1, Arch: riscv64, Platform: riscv64-qemu-virt, App type: rust
+[37mcargo -C labs/lab1 build[0m [90m-Z unstable-options --target riscv64gc-unknown-none-elf --target-dir /home/ff207/OsSummer2025/stage3/lab1/oscamp/arceos/target --release  --features "axstd/log-level-warn"[0m
+[37mrust-objcopy --binary-architecture=riscv64[0m [90mlabs/lab1/lab1_riscv64-qemu-virt.elf --strip-all -O binary labs/lab1/lab1_riscv64-qemu-virt.bin[0m
+    [96;1mRunning[0m on qemu...
+[37mqemu-system-riscv64[0m [90m-m 128M -smp 1 -machine virt -bios default -kernel labs/lab1/lab1_riscv64-qemu-virt.bin -drive if=pflash,file=/home/ff207/OsSummer2025/stage3/lab1/oscamp/arceos/pflash.img,format=raw,unit=1 -nographic -D qemu.log -d in_asm,int,mmu,pcall,cpu_reset,guest_errors[0m
+
+OpenSBI v1.0
+   ____                    _____ ____ _____
+  / __ \                  / ____|  _ \_   _|
+ | |  | |_ __   ___ _ __ | (___ | |_) || |
+ | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
+ | |__| | |_) |  __/ | | |____) | |_) || |_
+  \____/| .__/ \___|_| |_|_____/|____/_____|
+        | |
+        |_|
+
+Platform Name             : riscv-virtio,qemu
+Platform Features         : medeleg
+Platform HART Count       : 1
+Platform IPI Device       : aclint-mswi
+Platform Timer Device     : aclint-mtimer @ 10000000Hz
+Platform Console Device   : uart8250
+Platform HSM Device       : ---
+Platform Reboot Device    : sifive_test
+Platform Shutdown Device  : sifive_test
+Firmware Base             : 0x80000000
+Firmware Size             : 252 KB
+Runtime SBI Version       : 0.3
+
+Domain0 Name              : root
+Domain0 Boot HART         : 0
+Domain0 HARTs             : 0*
+Domain0 Region00          : 0x0000000002000000-0x000000000200ffff (I)
+Domain0 Region01          : 0x0000000080000000-0x000000008003ffff ()
+Domain0 Region02          : 0x0000000000000000-0xffffffffffffffff (R,W,X)
+Domain0 Next Address      : 0x0000000080200000
+Domain0 Next Arg1         : 0x0000000087000000
+Domain0 Next Mode         : S-mode
+Domain0 SysReset          : yes
+
+Boot HART ID              : 0
+Boot HART Domain          : root
+Boot HART ISA             : rv64imafdcsuh
+Boot HART Features        : scounteren,mcounteren,time
+Boot HART PMP Count       : 16
+Boot HART PMP Granularity : 4
+Boot HART PMP Address Bits: 54
+Boot HART MHPM Count      : 0
+Boot HART MIDELEG         : 0x0000000000001666
+Boot HART MEDELEG         : 0x0000000000f0b509
+
+       d8888                            .d88888b.   .d8888b.
+      d88888                           d88P" "Y88b d88P  Y88b
+     d88P888                           888     888 Y88b.
+    d88P 888 888d888  .d8888b  .d88b.  888     888  "Y888b.
+   d88P  888 888P"   d88P"    d8P  Y8b 888     888     "Y88b.
+  d88P   888 888     888      88888888 888     888       "888
+ d8888888888 888     Y88b.    Y8b.     Y88b. .d88P Y88b  d88P
+d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
+
+arch = riscv64
+platform = riscv64-qemu-virt
+target = riscv64gc-unknown-none-elf
+smp = 1
+build_mode = release
+log_level = warn
+
+Running bumb tests...
+Indicator: 0
+Indicator: 1
+Indicator: 2
+Indicator: 3
+Indicator: 4
+Indicator: 5
+Indicator: 6
+Indicator: 7
+Indicator: 8
+Indicator: 9
+Indicator: 10
+Indicator: 11
+Indicator: 12
+Indicator: 13
+Indicator: 14
+Indicator: 15
+Indicator: 16
+Indicator: 17
+Indicator: 18
+Indicator: 19
+Indicator: 20
+Indicator: 21
+Indicator: 22
+Indicator: 23
+Indicator: 24
+Indicator: 25
+Indicator: 26
+Indicator: 27
+Indicator: 28
+Indicator: 29
+Indicator: 30
+Indicator: 31
+Indicator: 32
+Indicator: 33
+Indicator: 34
+Indicator: 35
+Indicator: 36
+Indicator: 37
+Indicator: 38
+Indicator: 39
+Indicator: 40
+Indicator: 41
+Indicator: 42
+Indicator: 43
+Indicator: 44
+Indicator: 45
+Indicator: 46
+Indicator: 47
+Indicator: 48
+Indicator: 49
+Indicator: 50
+Indicator: 51
+Indicator: 52
+Indicator: 53
+Indicator: 54
+Indicator: 55
+Indicator: 56
+Indicator: 57
+Indicator: 58
+Indicator: 59
+Indicator: 60
+Indicator: 61
+Indicator: 62
+Indicator: 63
+Indicator: 64
+Indicator: 65
+Indicator: 66
+Indicator: 67
+Indicator: 68
+Indicator: 69
+Indicator: 70
+Indicator: 71
+Indicator: 72
+Indicator: 73
+Indicator: 74
+Indicator: 75
+Indicator: 76
+Indicator: 77
+Indicator: 78
+Indicator: 79
+Indicator: 80
+Indicator: 81
+Indicator: 82
+Indicator: 83
+Indicator: 84
+Indicator: 85
+Indicator: 86
+Indicator: 87
+Indicator: 88
+Indicator: 89
+Indicator: 90
+Indicator: 91
+Indicator: 92
+Indicator: 93
+Indicator: 94
+Indicator: 95
+Indicator: 96
+Indicator: 97
+Indicator: 98
+Indicator: 99
+Indicator: 100
+Indicator: 101
+Indicator: 102
+Indicator: 103
+Indicator: 104
+Indicator: 105
+Indicator: 106
+Indicator: 107
+Indicator: 108
+Indicator: 109
+Indicator: 110
+Indicator: 111
+Indicator: 112
+Indicator: 113
+Indicator: 114
+Indicator: 115
+Indicator: 116
+Indicator: 117
+Indicator: 118
+Indicator: 119
+Indicator: 120
+Indicator: 121
+Indicator: 122
+Indicator: 123
+Indicator: 124
+Indicator: 125
+Indicator: 126
+Indicator: 127
+Indicator: 128
+Indicator: 129
+Indicator: 130
+Indicator: 131
+Indicator: 132
+Indicator: 133
+Indicator: 134
+Indicator: 135
+Indicator: 136
+Indicator: 137
+Indicator: 138
+Indicator: 139
+Indicator: 140
+Indicator: 141
+Indicator: 142
+Indicator: 143
+Indicator: 144
+Indicator: 145
+Indicator: 146
+Indicator: 147
+Indicator: 148
+Indicator: 149
+Indicator: 150
+Indicator: 151
+Indicator: 152
+Indicator: 153
+Indicator: 154
+Indicator: 155
+Indicator: 156
+Indicator: 157
+Indicator: 158
+Indicator: 159
+Indicator: 160
+Indicator: 161
+Indicator: 162
+Indicator: 163
+Indicator: 164
+Indicator: 165
+Indicator: 166
+Indicator: 167
+Indicator: 168
+Indicator: 169
+Indicator: 170
+Indicator: 171
+Indicator: 172
+Indicator: 173
+Indicator: 174
+Indicator: 175
+Indicator: 176
+Indicator: 177
+Indicator: 178
+Indicator: 179
+Indicator: 180
+Indicator: 181
+Indicator: 182
+Indicator: 183
+Indicator: 184
+Indicator: 185
+Indicator: 186
+Indicator: 187
+Indicator: 188
+Indicator: 189
+[37m[  1.315599 0 axruntime::lang_items:5] [31mpanicked at modules/axalloc/src/lib.rs:124:31:
+Bumb: NoMemory.[m
+[m
