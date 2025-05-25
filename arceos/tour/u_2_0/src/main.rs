@@ -8,7 +8,7 @@ extern crate alloc;
 
 use alloc::string::String;
 
-#[cfg_attr(feature = "axstd", no_mangle)]
+#[cfg_attr(feature = "axstd", unsafe(no_mangle))]
 fn main() {
     let s = String::from("Hello, axalloc!");
     println!("Alloc String: \"{}\"", s);

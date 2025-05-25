@@ -1,18 +1,22 @@
 use aarch64_cpu::{asm, asm::barrier, registers::*};
 use core::ptr::addr_of_mut;
-use page_table_entry::aarch64::{MemAttr, A64PTE};
+use page_table_entry::aarch64::{A64PTE, MemAttr};
 use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
-use axconfig::TASK_STACK_SIZE;
+use axconfig::{TASK_STACK_SIZE, plat::PHYS_VIRT_OFFSET};
 
-#[link_section = ".bss.stack"]
+#[unsafe(link_section = ".bss.stack")]
 static mut BOOT_STACK: [u8; TASK_STACK_SIZE] = [0; TASK_STACK_SIZE];
 
-#[link_section = ".data.boot_page_table"]
+#[unsafe(link_section = ".data.boot_page_table")]
 static mut BOOT_PT_L0: [A64PTE; 512] = [A64PTE::empty(); 512];
 
-#[link_section = ".data.boot_page_table"]
+#[unsafe(link_section = ".data.boot_page_table")]
 static mut BOOT_PT_L1: [A64PTE; 512] = [A64PTE::empty(); 512];
+
+const FLAG_LE: usize = 0b0;
+const FLAG_PAGE_SIZE_4K: usize = 0b10;
+const FLAG_ANY_MEM: usize = 0b1000;
 
 unsafe fn switch_to_el1() {
     SPSel.write(SPSel::SP::ELx);
@@ -47,11 +51,13 @@ unsafe fn switch_to_el1() {
                 + SPSR_EL2::I::Masked
                 + SPSR_EL2::F::Masked,
         );
-        core::arch::asm!(
-            "
-            mov     x8, sp
-            msr     sp_el1, x8"
-        );
+        unsafe {
+            core::arch::asm!(
+                "
+                mov     x8, sp
+                msr     sp_el1, x8"
+            )
+        };
         ELR_EL2.set(LR.get());
         asm::eret();
     }
@@ -77,7 +83,7 @@ unsafe fn init_mmu() {
     barrier::isb(barrier::SY);
 
     // Set both TTBR0 and TTBR1
-    let root_paddr = pa!(BOOT_PT_L0.as_ptr() as usize).as_usize() as _;
+    let root_paddr = pa!(&raw const BOOT_PT_L0 as usize).as_usize() as _;
     TTBR0_EL1.set(root_paddr);
     TTBR1_EL1.set(root_paddr);
 
@@ -100,14 +106,41 @@ unsafe fn init_boot_page_table() {
     crate::platform::mem::init_boot_page_table(addr_of_mut!(BOOT_PT_L0), addr_of_mut!(BOOT_PT_L1));
 }
 
-/// The earliest entry point for the primary CPU.
-#[naked]
-#[no_mangle]
-#[link_section = ".text.boot"]
+/// Kernel entry point with Linux image header.
+///
+/// Some bootloaders require this header to be present at the beginning of the
+/// kernel image.
+///
+/// Documentation: <https://docs.kernel.org/arch/arm64/booting.html>
+#[unsafe(naked)]
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".text.boot")]
 unsafe extern "C" fn _start() -> ! {
-    // PC = 0x8_0000
+    // PC = bootloader load address
     // X0 = dtb
-    core::arch::asm!("
+    core::arch::naked_asm!("
+        add     x13, x18, #0x16     // 'MZ' magic
+        b       {entry}             // Branch to kernel start, magic
+
+        .quad   0                   // Image load offset from start of RAM, little-endian
+        .quad   _ekernel - _start   // Effective size of kernel image, little-endian
+        .quad   {flags}             // Kernel flags, little-endian
+        .quad   0                   // reserved
+        .quad   0                   // reserved
+        .quad   0                   // reserved
+        .ascii  \"ARM\\x64\"        // Magic number
+        .long   0                   // reserved (used for PE COFF offset)",
+        flags = const FLAG_LE | FLAG_PAGE_SIZE_4K | FLAG_ANY_MEM,
+        entry = sym _start_primary,
+    )
+}
+
+/// The earliest entry point for the primary CPU.
+#[unsafe(naked)]
+#[unsafe(link_section = ".text.boot")]
+unsafe extern "C" fn _start_primary() -> ! {
+    // X0 = dtb
+    core::arch::naked_asm!("
         mrs     x19, mpidr_el1
         and     x19, x19, #0xffffff     // get current CPU id
         mov     x20, x0                 // save DTB pointer
@@ -135,19 +168,18 @@ unsafe extern "C" fn _start() -> ! {
         enable_fp = sym enable_fp,
         boot_stack = sym BOOT_STACK,
         boot_stack_size = const TASK_STACK_SIZE,
-        phys_virt_offset = const axconfig::PHYS_VIRT_OFFSET,
+        phys_virt_offset = const PHYS_VIRT_OFFSET,
         entry = sym crate::platform::rust_entry,
-        options(noreturn),
     )
 }
 
 /// The earliest entry point for the secondary CPUs.
 #[cfg(feature = "smp")]
-#[naked]
-#[no_mangle]
-#[link_section = ".text.boot"]
+#[unsafe(naked)]
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".text.boot")]
 unsafe extern "C" fn _start_secondary() -> ! {
-    core::arch::asm!("
+    core::arch::naked_asm!("
         mrs     x19, mpidr_el1
         and     x19, x19, #0xffffff     // get current CPU id
 
@@ -166,8 +198,7 @@ unsafe extern "C" fn _start_secondary() -> ! {
         switch_to_el1 = sym switch_to_el1,
         init_mmu = sym init_mmu,
         enable_fp = sym enable_fp,
-        phys_virt_offset = const axconfig::PHYS_VIRT_OFFSET,
+        phys_virt_offset = const PHYS_VIRT_OFFSET,
         entry = sym crate::platform::rust_entry_secondary,
-        options(noreturn),
     )
 }

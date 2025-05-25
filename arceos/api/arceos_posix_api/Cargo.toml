@@ -1,7 +1,7 @@
 [package]
 name = "arceos_posix_api"
 version.workspace = true
-edition = "2021"
+edition.workspace = true
 authors = [
     "Yuekai Jia <equation618@gmail.com>",
     "yanjuguang <coolyanjg@163.com>",
@@ -23,12 +23,13 @@ smp = ["axfeat/smp"]
 irq = ["axfeat/irq"]
 alloc = ["dep:axalloc", "axfeat/alloc"]
 multitask = ["axtask/multitask", "axfeat/multitask", "axsync/multitask"]
-fd = ["alloc"]
+fd = ["alloc", "dep:axns"]
 fs = ["dep:axfs", "axfeat/fs", "fd"]
 net = ["dep:axnet", "axfeat/net", "fd"]
 pipe = ["fd"]
 select = ["fd"]
 epoll = ["fd"]
+uspace = ["axns/thread-local"]
 
 [dependencies]
 # ArceOS modules
@@ -42,14 +43,16 @@ axalloc = { workspace = true, optional = true }
 axtask = { workspace = true, optional = true }
 axfs = { workspace = true, optional = true }
 axnet = { workspace = true, optional = true }
+axns = { workspace = true, optional = true }
 
 # Other crates
 axio = "0.1"
 axerrno = "0.1"
-flatten_objects = "0.1"
+flatten_objects = "0.2.3"
 static_assertions = "1.1.0"
 spin = { version = "0.9" }
 lazy_static = { version = "1.5", features = ["spin_no_std"] }
+ctor_bare = "0.2"
 
 [build-dependencies]
-bindgen ={ version = "0.69" }
+bindgen = { version = "0.71" }

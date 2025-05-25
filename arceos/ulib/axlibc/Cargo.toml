@@ -1,7 +1,7 @@
 [package]
 name = "axlibc"
 version.workspace = true
-edition = "2021"
+edition.workspace = true
 authors = [
     "Yuekai Jia <equation618@gmail.com>",
     "yanjuguang <coolyanjg@163.com>",
@@ -57,4 +57,4 @@ axio = "0.1"
 axerrno = "0.1"
 
 [build-dependencies]
-bindgen ={ version = "0.69" }
+bindgen ={ version = "0.71" }

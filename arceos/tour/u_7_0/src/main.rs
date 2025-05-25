@@ -11,7 +11,7 @@ use axdriver::prelude::{DeviceType, BaseDriverOps, BlockDriverOps};
 const DISK_SIZE:    usize = 0x400_0000; // 64M
 const BLOCK_SIZE:   usize = 0x200;      // 512-bytes in default
 
-#[cfg_attr(feature = "axstd", no_mangle)]
+#[cfg_attr(feature = "axstd", unsafe(no_mangle))]
 fn main() {
     println!("Load app from disk ...");
 

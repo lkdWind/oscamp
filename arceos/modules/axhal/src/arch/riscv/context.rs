@@ -1,9 +1,7 @@
-use core::arch::asm;
+use core::arch::naked_asm;
 use memory_addr::VirtAddr;
-#[cfg(feature = "uspace")]
-use memory_addr::PhysAddr;
-
-include_asm_marcos!();
+#[cfg(feature = "fp_simd")]
+use riscv::register::sstatus::FS;
 
 /// General registers of RISC-V.
 #[allow(missing_docs)]
@@ -43,6 +41,28 @@ pub struct GeneralRegisters {
     pub t6: usize,
 }
 
+/// Floating-point registers of RISC-V.
+#[cfg(feature = "fp_simd")]
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct FpStatus {
+    /// the state of the RISC-V Floating-Point Unit (FPU)
+    pub fp: [u64; 32],
+    pub fcsr: usize,
+    pub fs: FS,
+}
+
+#[cfg(feature = "fp_simd")]
+impl Default for FpStatus {
+    fn default() -> Self {
+        Self {
+            fs: FS::Initial,
+            fp: [0; 32],
+            fcsr: 0,
+        }
+    }
+}
+
 /// Saved registers when a trap (interrupt or exception) occurs.
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy)]
@@ -61,9 +81,19 @@ impl TrapFrame {
         self.regs.a0
     }
 
+    /// Sets the 0th syscall argument.
+    pub const fn set_arg0(&mut self, a0: usize) {
+        self.regs.a0 = a0;
+    }
+
     /// Gets the 1st syscall argument.
     pub const fn arg1(&self) -> usize {
         self.regs.a1
+    }
+
+    /// Sets the 1th syscall argument.
+    pub const fn set_arg1(&mut self, a1: usize) {
+        self.regs.a1 = a1;
     }
 
     /// Gets the 2nd syscall argument.
@@ -71,9 +101,19 @@ impl TrapFrame {
         self.regs.a2
     }
 
+    /// Sets the 2nd syscall argument.
+    pub const fn set_arg2(&mut self, a2: usize) {
+        self.regs.a2 = a2;
+    }
+
     /// Gets the 3rd syscall argument.
     pub const fn arg3(&self) -> usize {
         self.regs.a3
+    }
+
+    /// Sets the 3rd syscall argument.
+    pub const fn set_arg3(&mut self, a3: usize) {
+        self.regs.a3 = a3;
     }
 
     /// Gets the 4th syscall argument.
@@ -81,9 +121,167 @@ impl TrapFrame {
         self.regs.a4
     }
 
+    /// Sets the 4th syscall argument.
+    pub const fn set_arg4(&mut self, a4: usize) {
+        self.regs.a4 = a4;
+    }
+
     /// Gets the 5th syscall argument.
     pub const fn arg5(&self) -> usize {
         self.regs.a5
+    }
+
+    /// Sets the 5th syscall argument.
+    pub const fn set_arg5(&mut self, a5: usize) {
+        self.regs.a5 = a5;
+    }
+
+    /// Gets the instruction pointer.
+    pub const fn ip(&self) -> usize {
+        self.sepc
+    }
+
+    /// Sets the instruction pointer.
+    pub const fn set_ip(&mut self, pc: usize) {
+        self.sepc = pc;
+    }
+
+    /// Gets the stack pointer.
+    pub const fn sp(&self) -> usize {
+        self.regs.sp
+    }
+
+    /// Sets the stack pointer.
+    pub const fn set_sp(&mut self, sp: usize) {
+        self.regs.sp = sp;
+    }
+
+    /// Gets the return value register.
+    pub const fn retval(&self) -> usize {
+        self.regs.a0
+    }
+
+    /// Sets the return value register.
+    pub const fn set_retval(&mut self, a0: usize) {
+        self.regs.a0 = a0;
+    }
+
+    /// Sets the return address.
+    pub const fn set_ra(&mut self, ra: usize) {
+        self.regs.ra = ra;
+    }
+
+    /// Gets the TLS area.
+    pub const fn tls(&self) -> usize {
+        self.regs.tp
+    }
+
+    /// Sets the TLS area.
+    pub const fn set_tls(&mut self, tls_area: usize) {
+        self.regs.tp = tls_area;
+    }
+}
+
+/// Context to enter user space.
+#[cfg(feature = "uspace")]
+pub struct UspaceContext(TrapFrame);
+
+#[cfg(feature = "uspace")]
+impl UspaceContext {
+    /// Creates an empty context with all registers set to zero.
+    pub const fn empty() -> Self {
+        unsafe { core::mem::MaybeUninit::zeroed().assume_init() }
+    }
+
+    /// Creates a new context with the given entry point, user stack pointer,
+    /// and the argument.
+    pub fn new(entry: usize, ustack_top: VirtAddr, arg0: usize) -> Self {
+        const BIT_SPIE: usize = 5;
+        const BIT_SUM: usize = 18;
+
+        let mut sstatus: usize = 0;
+        sstatus |= 1 << BIT_SPIE;
+        sstatus |= 1 << BIT_SUM;
+        #[cfg(feature = "fp_simd")]
+        {
+            // set the initial state of the FPU
+            const BIT_FS: usize = 13;
+            sstatus |= (FS::Initial as usize) << BIT_FS;
+        }
+
+        Self(TrapFrame {
+            regs: GeneralRegisters {
+                a0: arg0,
+                sp: ustack_top.as_usize(),
+                ..Default::default()
+            },
+            sepc: entry,
+            sstatus,
+        })
+    }
+
+    /// Creates a new context from the given [`TrapFrame`].
+    pub const fn from(trap_frame: &TrapFrame) -> Self {
+        Self(*trap_frame)
+    }
+
+    /// Enters user space.
+    ///
+    /// It restores the user registers and jumps to the user entry point
+    /// (saved in `sepc`).
+    /// When an exception or syscall occurs, the kernel stack pointer is
+    /// switched to `kstack_top`.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it changes processor mode and the stack.
+    #[unsafe(no_mangle)]
+    pub unsafe fn enter_uspace(&self, kstack_top: VirtAddr) -> ! {
+        use riscv::register::{sepc, sscratch};
+
+        super::disable_irqs();
+        sscratch::write(kstack_top.as_usize());
+        sepc::write(self.0.sepc);
+        // Address of the top of the kernel stack after saving the trap frame.
+        let kernel_trap_addr = kstack_top.as_usize() - core::mem::size_of::<TrapFrame>();
+        unsafe {
+            core::arch::asm!(
+                include_asm_macros!(),
+                "
+                mv      sp, {tf}
+
+                STR     gp, {kernel_trap_addr}, 2
+                LDR     gp, sp, 2
+
+                STR     tp, {kernel_trap_addr}, 3
+                LDR     tp, sp, 3
+
+                LDR     t0, sp, 32
+                csrw    sstatus, t0
+                POP_GENERAL_REGS
+                LDR     sp, sp, 1
+                sret",
+                tf = in(reg) &(self.0),
+                kernel_trap_addr = in(reg) kernel_trap_addr,
+                options(noreturn),
+            )
+        }
+    }
+}
+
+#[cfg(feature = "uspace")]
+impl core::ops::Deref for UspaceContext {
+    type Target = TrapFrame;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[cfg(feature = "uspace")]
+impl core::ops::DerefMut for UspaceContext {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -93,7 +291,7 @@ impl TrapFrame {
 ///
 /// - Callee-saved registers
 /// - Stack pointer register
-/// - Thread pointer register (for thread-local storage, currently unsupported)
+/// - Thread pointer register (for kernel-space thread-local storage)
 /// - FP/SIMD registers
 ///
 /// On context switch, current task saves its context from CPU to memory,
@@ -119,11 +317,13 @@ pub struct TaskContext {
     pub s10: usize,
     pub s11: usize,
 
+    /// Thread pointer
     pub tp: usize,
     /// The `satp` register value, i.e., the page table root.
     #[cfg(feature = "uspace")]
-    pub satp: PhysAddr,
-    // TODO: FP states
+    pub satp: memory_addr::PhysAddr,
+    #[cfg(feature = "fp_simd")]
+    pub fp_status: FpStatus,
 }
 
 impl TaskContext {
@@ -138,6 +338,11 @@ impl TaskContext {
         Self {
             #[cfg(feature = "uspace")]
             satp: crate::paging::kernel_page_table_root(),
+            #[cfg(feature = "fp_simd")]
+            fp_status: FpStatus {
+                fs: FS::Initial,
+                ..Default::default()
+            },
             ..Default::default()
         }
     }
@@ -157,7 +362,7 @@ impl TaskContext {
     ///
     /// [1]: crate::paging::kernel_page_table_root
     #[cfg(feature = "uspace")]
-    pub fn set_page_table_root(&mut self, satp: PhysAddr) {
+    pub fn set_page_table_root(&mut self, satp: memory_addr::PhysAddr) {
         self.satp = satp;
     }
 
@@ -177,113 +382,91 @@ impl TaskContext {
                 super::write_page_table_root(next_ctx.satp);
             }
         }
-        unsafe {
-            // TODO: switch FP states
-            context_switch(self, next_ctx)
+        #[cfg(feature = "fp_simd")]
+        {
+            use riscv::register::sstatus;
+            use riscv::register::sstatus::FS;
+            // get the real FP state of the current task
+            let current_fs = sstatus::read().fs();
+            // save the current task's FP state
+            if current_fs == FS::Dirty {
+                // we need to save the current task's FP state
+                unsafe {
+                    save_fp_registers(&mut self.fp_status.fp);
+                }
+                // after saving, we set the FP state to clean
+                self.fp_status.fs = FS::Clean;
+            }
+            // restore the next task's FP state
+            match next_ctx.fp_status.fs {
+                FS::Clean => unsafe {
+                    // the next task's FP state is clean, we should restore it
+                    restore_fp_registers(&next_ctx.fp_status.fp);
+                    // after restoring, we set the FP state
+                    sstatus::set_fs(FS::Clean);
+                },
+                FS::Initial => unsafe {
+                    // restore the FP state as constant values(all 0)
+                    clear_fp_registers();
+                    // we set the FP state to initial
+                    sstatus::set_fs(FS::Initial);
+                },
+                FS::Dirty => {
+                    // should not happen, since we set FS to Clean after saving
+                    panic!("FP state of the next task should not be dirty");
+                }
+                _ => {}
+            }
         }
+
+        unsafe { context_switch(self, next_ctx) }
     }
 }
 
-/// Context to enter user space.
-#[cfg(feature = "uspace")]
-pub struct UspaceContext(TrapFrame);
-
-#[cfg(feature = "uspace")]
-impl UspaceContext {
-    /// Creates an empty context with all registers set to zero.
-    pub const fn empty() -> Self {
-        unsafe { core::mem::MaybeUninit::zeroed().assume_init() }
-    }
-
-    /// Creates a new context with the given entry point, user stack pointer,
-    /// and the argument.
-    pub fn new(entry: usize, ustack_top: VirtAddr) -> Self {
-        const SPIE: usize = 1 << 5;
-        const SUM: usize = 1 << 18;
-        Self(TrapFrame {
-            regs: GeneralRegisters {
-                sp: ustack_top.as_usize(),
-                ..Default::default()
-            },
-            sepc: entry,
-            sstatus: SPIE | SUM,
-        })
-    }
-
-    /// Creates a new context from the given [`TrapFrame`].
-    pub const fn from(trap_frame: &TrapFrame) -> Self {
-        Self(*trap_frame)
-    }
-
-    /// Gets the instruction pointer.
-    pub const fn get_ip(&self) -> usize {
-        self.0.sepc
-    }
-
-    /// Gets the stack pointer.
-    pub const fn get_sp(&self) -> usize {
-        self.0.regs.sp
-    }
-
-    /// Sets the instruction pointer.
-    pub const fn set_ip(&mut self, pc: usize) {
-        self.0.sepc = pc;
-    }
-
-    /// Sets the stack pointer.
-    pub const fn set_sp(&mut self, sp: usize) {
-        self.0.regs.sp = sp;
-    }
-
-    /// Sets the return value register.
-    pub const fn set_retval(&mut self, a0: usize) {
-        self.0.regs.a0 = a0;
-    }
-
-    /// Enters user space.
-    ///
-    /// It restores the user registers and jumps to the user entry point
-    /// (saved in `sepc`).
-    /// When an exception or syscall occurs, the kernel stack pointer is
-    /// switched to `kstack_top`.
-    ///
-    /// # Safety
-    ///
-    /// This function is unsafe because it changes processor mode and the stack.
-    #[inline(never)]
-    #[no_mangle]
-    pub unsafe fn enter_uspace(&self, kstack_top: VirtAddr) -> ! {
-        use riscv::register::{sepc, sscratch};
-
-        super::disable_irqs();
-        sscratch::write(kstack_top.as_usize());
-        sepc::write(self.0.sepc);
-        // Address of the top of the kernel stack after saving the trap frame.
-        let kernel_trap_addr = kstack_top.as_usize() - core::mem::size_of::<TrapFrame>();
-        asm!("
-            mv      sp, {tf}
-            
-            STR     gp, {kernel_trap_addr}, 2
-            LDR     gp, sp, 2
-
-            STR     tp, {kernel_trap_addr}, 3
-            LDR     tp, sp, 3
-
-            LDR     t0, sp, 32
-            csrw    sstatus, t0
-            POP_GENERAL_REGS
-            LDR     sp, sp, 1
-            sret",
-            tf = in(reg) &(self.0),
-            kernel_trap_addr = in(reg) kernel_trap_addr,
-            options(noreturn),
-        )
-    }
+#[cfg(feature = "fp_simd")]
+#[unsafe(naked)]
+unsafe extern "C" fn save_fp_registers(_fp_registers: &mut [u64; 32]) {
+    naked_asm!(
+        include_fp_asm_macros!(),
+        "
+        PUSH_FLOAT_REGS a0
+        frcsr t0
+        STR t0, a0, 32
+        ret
+        "
+    )
 }
 
-#[naked]
+#[cfg(feature = "fp_simd")]
+#[unsafe(naked)]
+unsafe extern "C" fn restore_fp_registers(_fp_registers: &[u64; 32]) {
+    naked_asm!(
+        include_fp_asm_macros!(),
+        "
+        POP_FLOAT_REGS a0
+        LDR t0, a0, 32
+        fscsr x0, t0
+        ret
+        "
+    )
+}
+
+#[cfg(feature = "fp_simd")]
+#[unsafe(naked)]
+unsafe extern "C" fn clear_fp_registers() {
+    naked_asm!(
+        include_fp_asm_macros!(),
+        "
+        CLEAR_FLOAT_REGS
+        ret
+        "
+    )
+}
+
+#[unsafe(naked)]
 unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task: &TaskContext) {
-    asm!(
+    naked_asm!(
+        include_asm_macros!(),
         "
         // save old context (callee-saved registers)
         STR     ra, a0, 0
@@ -318,6 +501,5 @@ unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task:
         LDR     ra, a1, 0
 
         ret",
-        options(noreturn),
     )
 }

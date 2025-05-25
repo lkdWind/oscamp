@@ -26,7 +26,7 @@ use loader::load_user_app;
 const USER_STACK_SIZE: usize = 0x10000;
 const KERNEL_STACK_SIZE: usize = 0x40000; // 256 KiB
 
-#[cfg_attr(feature = "axstd", no_mangle)]
+#[cfg_attr(feature = "axstd", unsafe(no_mangle))]
 fn main() {
     // A new address space for user app.
     let mut uspace = axmm::new_user_aspace().unwrap();

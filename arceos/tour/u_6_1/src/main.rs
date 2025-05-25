@@ -15,7 +15,7 @@ use std::os::arceos::modules::axtask::WaitQueue;
 const LOOP_NUM: usize = 256;
 static WQ: WaitQueue = WaitQueue::new();
 
-#[cfg_attr(feature = "axstd", no_mangle)]
+#[cfg_attr(feature = "axstd", unsafe(no_mangle))]
 fn main() {
     ax_println!("WaitQ is starting ...");
 

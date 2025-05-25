@@ -1,7 +1,7 @@
 [package]
 name = "arceos_api"
 version.workspace = true
-edition = "2021"
+edition.workspace = true
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "Public APIs and types for ArceOS modules"
 license.workspace = true
@@ -14,7 +14,6 @@ default = []
 
 irq = ["axfeat/irq"]
 alloc = ["dep:axalloc", "axfeat/alloc"]
-alt_alloc = ["dep:alt_axalloc", "axfeat/alt_alloc"]
 paging = ["dep:axmm", "axfeat/paging"]
 dma = ["dep:axdma", "axfeat/dma"]
 multitask = ["axtask/multitask", "axsync/multitask", "axfeat/multitask"]
@@ -37,7 +36,6 @@ axlog = { workspace = true }
 axhal = { workspace = true }
 axsync = { workspace = true }
 axalloc = { workspace = true, optional = true }
-alt_axalloc = { workspace = true, optional = true }
 axmm = { workspace = true, optional = true }
 axdma = { workspace = true, optional = true }
 axtask = { workspace = true, optional = true }

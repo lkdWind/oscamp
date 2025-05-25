@@ -73,19 +73,20 @@ pub unsafe fn write_page_table_root(root_paddr: PhysAddr) {
 /// entry that maps the given virtual address.
 #[inline]
 pub fn flush_tlb(vaddr: Option<VirtAddr>) {
-    unsafe {
-        if let Some(vaddr) = vaddr {
-            asm::sfence_vma(0, vaddr.as_usize())
-        } else {
-            asm::sfence_vma_all();
-        }
+    if let Some(vaddr) = vaddr {
+        asm::sfence_vma(0, vaddr.as_usize())
+    } else {
+        asm::sfence_vma_all();
     }
 }
 
 /// Writes Supervisor Trap Vector Base Address Register (`stvec`).
 #[inline]
 pub fn set_trap_vector_base(stvec: usize) {
-    unsafe { stvec::write(stvec, stvec::TrapMode::Direct) }
+    let mut reg = stvec::read();
+    reg.set_address(stvec);
+    reg.set_trap_mode(stvec::TrapMode::Direct);
+    unsafe { stvec::write(reg) }
 }
 
 /// Reads the thread pointer of the current CPU.
@@ -114,25 +115,8 @@ pub unsafe fn write_thread_pointer(tp: usize) {
 ///
 /// On RISC-V, it sets the trap vector base address.
 pub fn cpu_init() {
-    extern "C" {
+    unsafe extern "C" {
         fn trap_vector_base();
     }
     set_trap_vector_base(trap_vector_base as usize);
-}
-
-/// Bit 1: Supervisor Interrupt Enable
-const SIE_BIT: usize = 1 << 1;
-
-#[inline]
-pub fn local_irq_save_and_disable() -> usize {
-    let flags: usize;
-    // clear the `SIE` bit, and return the old CSR
-    unsafe { core::arch::asm!("csrrc {}, sstatus, {}", out(reg) flags, const SIE_BIT) };
-    flags & SIE_BIT
-}
-
-#[inline]
-pub fn local_irq_restore(flags: usize) {
-    // restore the `SIE` bit
-    unsafe { core::arch::asm!("csrrs x0, sstatus, {}", in(reg) flags) };
 }

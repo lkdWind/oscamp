@@ -27,7 +27,7 @@ const PHY_MEM_START: usize = 0x8000_0000;
 const PHY_MEM_SIZE: usize = 0x100_0000;
 const KERNEL_BASE: usize = 0x8020_0000;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 fn main() {
     info!("Starting virtualization...");
     unsafe {

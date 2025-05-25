@@ -10,24 +10,41 @@ else
   $(error "BUS" must be one of "mmio" or "pci")
 endif
 
+ifeq ($(ARCH), x86_64)
+  machine := q35
+else ifeq ($(ARCH), riscv64)
+  machine := virt
+else ifeq ($(ARCH), aarch64)
+  ifeq ($(PLAT_NAME), aarch64-raspi4)
+    machine := raspi4b
+    override MEM := 2G
+  else
+    machine := virt
+  endif
+else ifeq ($(ARCH), loongarch64)
+  machine := virt
+  override MEM := 1G
+endif
+
 qemu_args-x86_64 := \
-  -machine q35 \
+  -machine $(machine) \
   -kernel $(OUT_ELF)
 
 qemu_args-riscv64 := \
-  -machine virt \
+  -machine $(machine) \
   -bios default \
-  -kernel $(OUT_BIN)
+  -kernel $(FINAL_IMG)
 
 qemu_args-aarch64 := \
   -cpu cortex-a72 \
-  -machine virt \
-  -kernel $(OUT_BIN)
+  -machine $(machine) \
+  -kernel $(FINAL_IMG)
 
-qemu_args-y := -m 128M -smp $(SMP) $(qemu_args-$(ARCH))
+qemu_args-loongarch64 := \
+  -machine $(machine) \
+  -kernel $(OUT_ELF)
 
-qemu_args-$(PFLASH) += \
-  -drive if=pflash,file=$(CURDIR)/$(PFLASH_IMG),format=raw,unit=1
+qemu_args-y := -m $(MEM) -smp $(SMP) $(qemu_args-$(ARCH))
 
 qemu_args-$(BLK) += \
   -device virtio-blk-$(vdev-suffix),drive=disk0 \
@@ -71,12 +88,22 @@ endif
 
 qemu_args-debug := $(qemu_args-y) -s -S
 
+ifeq ($(ACCEL),)
+  ifneq ($(findstring -microsoft, $(shell uname -r | tr '[:upper:]' '[:lower:]')),)
+    ACCEL := n  # Don't enable kvm for WSL/WSL2
+  else ifeq ($(ARCH), x86_64)
+    ACCEL := $(if $(findstring x86_64, $(shell uname -m)),y,n)
+  else ifeq ($(ARCH), aarch64)
+    ACCEL := $(if $(findstring arm64, $(shell uname -m)),y,n)
+  else
+    ACCEL := n
+  endif
+endif
+
 # Do not use KVM for debugging
 ifeq ($(shell uname), Darwin)
   qemu_args-$(ACCEL) += -cpu host -accel hvf
-else ifeq ($(wildcard /dev/kvm),)
-  qemu_args-$(ACCEL) += -accel tcg
-else
+else ifneq ($(wildcard /dev/kvm),)
   qemu_args-$(ACCEL) += -cpu host -accel kvm
 endif
 

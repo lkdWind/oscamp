@@ -83,11 +83,10 @@ impl<T: ?Sized> Mutex<T> {
                 Err(owner_id) => {
                     assert_ne!(
                         owner_id, current_id,
-                        "Thread({}) tried to acquire mutex it already owns.",
-                        current_id,
+                        "Thread({current_id}) tried to acquire mutex it already owns.",
                     );
                     // Wait until the lock looks unlocked before retrying
-                    api::ax_wait_queue_wait(&self.wq, || !self.is_locked(), None);
+                    api::ax_wait_queue_wait_until(&self.wq, || !self.is_locked(), None);
                 }
             }
         }
@@ -129,8 +128,7 @@ impl<T: ?Sized> Mutex<T> {
         let current_id = api::ax_current_task_id();
         assert_eq!(
             owner_id, current_id,
-            "Thread({}) tried to release mutex it doesn't own",
-            current_id,
+            "Thread({current_id}) tried to release mutex it doesn't own",
         );
         // wake up one waiting thread.
         api::ax_wait_queue_wake(&self.wq, 1);
@@ -149,7 +147,7 @@ impl<T: ?Sized> Mutex<T> {
     }
 }
 
-impl<T: ?Sized + Default> Default for Mutex<T> {
+impl<T: Default> Default for Mutex<T> {
     #[inline(always)]
     fn default() -> Self {
         Self::new(Default::default())
@@ -167,7 +165,7 @@ impl<T: ?Sized + fmt::Debug> fmt::Debug for Mutex<T> {
     }
 }
 
-impl<'a, T: ?Sized> Deref for MutexGuard<'a, T> {
+impl<T: ?Sized> Deref for MutexGuard<'_, T> {
     type Target = T;
     #[inline(always)]
     fn deref(&self) -> &T {
@@ -176,7 +174,7 @@ impl<'a, T: ?Sized> Deref for MutexGuard<'a, T> {
     }
 }
 
-impl<'a, T: ?Sized> DerefMut for MutexGuard<'a, T> {
+impl<T: ?Sized> DerefMut for MutexGuard<'_, T> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut T {
         // We know statically that only we are referencing data
@@ -184,13 +182,13 @@ impl<'a, T: ?Sized> DerefMut for MutexGuard<'a, T> {
     }
 }
 
-impl<'a, T: ?Sized + fmt::Debug> fmt::Debug for MutexGuard<'a, T> {
+impl<T: ?Sized + fmt::Debug> fmt::Debug for MutexGuard<'_, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Debug::fmt(&**self, f)
     }
 }
 
-impl<'a, T: ?Sized> Drop for MutexGuard<'a, T> {
+impl<T: ?Sized> Drop for MutexGuard<'_, T> {
     /// The dropping of the [`MutexGuard`] will release the lock it was created from.
     fn drop(&mut self) {
         unsafe { self.lock.force_unlock() }

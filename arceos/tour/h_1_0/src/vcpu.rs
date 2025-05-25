@@ -181,6 +181,6 @@ global_asm!(
 
 );
 
-extern "C" {
+unsafe extern "C" {
     pub fn _run_guest(state: *mut VmCpuRegisters);
 }

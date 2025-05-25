@@ -1,7 +1,7 @@
 [package]
 name = "axstd"
 version.workspace = true
-edition = "2021"
+edition.workspace = true
 authors = [
     "Yuekai Jia <equation618@gmail.com>",
     "yanjuguang <coolyanjg@163.com>",
@@ -33,11 +33,11 @@ alloc = ["arceos_api/alloc", "axfeat/alloc", "axio/alloc"]
 alloc-tlsf = ["axfeat/alloc-tlsf"]
 alloc-slab = ["axfeat/alloc-slab"]
 alloc-buddy = ["axfeat/alloc-buddy"]
+page-alloc-64g = ["axfeat/page-alloc-64g"] # Support up to 64G memory capacity
+page-alloc-4g = ["axfeat/page-alloc-4g"] # Support up to 4G memory capacity
 paging = ["axfeat/paging"]
 dma = ["arceos_api/dma", "axfeat/dma"]
 tls = ["axfeat/tls"]
-
-alt_alloc = ["arceos_api/alt_alloc", "axfeat/alt_alloc"]
 
 # Multi-threading and scheduler
 multitask = ["arceos_api/multitask", "axfeat/multitask"]
@@ -48,6 +48,7 @@ sched_cfs = ["axfeat/sched_cfs"]
 # File system
 fs = ["arceos_api/fs", "axfeat/fs"]
 myfs = ["arceos_api/myfs", "axfeat/myfs"]
+lwext4_rs = ["axfeat/lwext4_rs"]
 
 # Networking
 net = ["arceos_api/net", "axfeat/net"]
@@ -64,6 +65,7 @@ bus-mmio = ["axfeat/bus-mmio"]
 bus-pci = ["axfeat/bus-pci"]
 driver-ramdisk = ["axfeat/driver-ramdisk"]
 driver-ixgbe = ["axfeat/driver-ixgbe"]
+driver-fxmac = ["axfeat/driver-fxmac"]
 driver-bcm2835-sdhci = ["axfeat/driver-bcm2835-sdhci"]
 
 # Logging

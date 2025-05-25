@@ -11,7 +11,7 @@ use std::os::arceos::modules::axhal::mem::phys_to_virt;
 /// Physical address for pflash#1
 const PFLASH_START: usize = 0x2200_0000;
 
-#[cfg_attr(feature = "axstd", no_mangle)]
+#[cfg_attr(feature = "axstd", unsafe(no_mangle))]
 fn main() {
     // Makesure that we can access pflash region.
     let va = phys_to_virt(PFLASH_START.into()).as_usize();

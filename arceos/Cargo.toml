@@ -3,7 +3,6 @@ resolver = "2"
 
 members = [
     "modules/axalloc",
-    "modules/alt_axalloc",
     "modules/axconfig",
     "modules/axdisplay",
     "modules/axdriver",
@@ -13,11 +12,10 @@ members = [
     "modules/axmm",
     "modules/axdma",
     "modules/axnet",
+    "modules/axns",
     "modules/axruntime",
     "modules/axsync",
     "modules/axtask",
-    "modules/bump_allocator",
-    "modules/riscv_vcpu",
 
     "api/axfeat",
     "api/arceos_api",
@@ -59,6 +57,7 @@ members = [
 
 [workspace.package]
 version = "0.1.0"
+edition = "2024"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
 homepage = "https://github.com/arceos-org/arceos"
@@ -72,11 +71,10 @@ axstd = { path = "ulib/axstd" }
 axlibc = { path = "ulib/axlibc" }
 
 arceos_api = { path = "api/arceos_api" }
-arceos_posix_api = { path = "api/arceos_posix_api", features = ["fs", "fd"] }
+arceos_posix_api = { path = "api/arceos_posix_api" }
 axfeat = { path = "api/axfeat" }
 
 axalloc = { path = "modules/axalloc" }
-alt_axalloc = { path = "modules/alt_axalloc" }
 axconfig = { path = "modules/axconfig" }
 axdisplay = { path = "modules/axdisplay" }
 axdriver = { path = "modules/axdriver" }
@@ -85,15 +83,16 @@ axhal = { path = "modules/axhal" }
 axlog = { path = "modules/axlog" }
 axmm = { path = "modules/axmm" }
 axnet = { path = "modules/axnet" }
+axns = { path = "modules/axns" }
 axruntime = { path = "modules/axruntime" }
 axsync = { path = "modules/axsync" }
 axtask = { path = "modules/axtask" }
 axdma = { path = "modules/axdma" }
 elf = { path = "modules/elf" }
-axfs_ramfs = { path = "./axfs_ramfs" }
-
-[patch.crates-io]
-kernel_guard = { path = "../crates/kernel_guard"} 
 
 [profile.release]
 lto = true
+
+[patch.crates-io]
+page_table_multiarch = { git = "https://github.com/Mivik/page_table_multiarch.git", rev = "19ededd" }
+page_table_entry = { git = "https://github.com/Mivik/page_table_multiarch.git", rev = "19ededd" }

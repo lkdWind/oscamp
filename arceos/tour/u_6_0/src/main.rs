@@ -13,7 +13,7 @@ use std::os::arceos::modules::axsync::spin::SpinNoIrq;
 
 const LOOP_NUM: usize = 256;
 
-#[cfg_attr(feature = "axstd", no_mangle)]
+#[cfg_attr(feature = "axstd", unsafe(no_mangle))]
 fn main() {
     ax_println!("Multi-task(Preemptible) is starting ...");
 

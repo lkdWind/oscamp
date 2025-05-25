@@ -1,4 +1,5 @@
-use axio::{prelude::*, Result, SeekFrom};
+use alloc::vec::Vec;
+use axio::{Result, SeekFrom, default_read_to_end, prelude::*};
 use core::fmt;
 
 use crate::fops;
@@ -16,10 +17,10 @@ pub struct File {
 }
 
 /// Metadata information about a file.
-pub struct Metadata(fops::FileAttr);
+pub struct Metadata(pub(super) fops::FileAttr);
 
 /// Options and flags which can be used to configure how a file is opened.
-#[derive(Clone, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct OpenOptions(fops::OpenOptions);
 
 impl OpenOptions {
@@ -167,6 +168,14 @@ impl File {
 impl Read for File {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         self.inner.read(buf)
+    }
+
+    fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<usize> {
+        default_read_to_end(
+            self,
+            buf,
+            self.metadata().ok().map(|metadata| metadata.size() as _),
+        )
     }
 }
 

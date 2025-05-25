@@ -1,6 +1,5 @@
 #![cfg_attr(feature = "axstd", no_std)]
 #![cfg_attr(feature = "axstd", no_main)]
-#![feature(asm_const)]
 #![feature(riscv_ext_intrinsics)]
 
 #[cfg(feature = "axstd")]
@@ -28,12 +27,12 @@ use axhal::mem::PhysAddr;
 
 const VM_ENTRY: usize = 0x8020_0000;
 
-#[cfg_attr(feature = "axstd", no_mangle)]
+#[cfg_attr(feature = "axstd", unsafe(no_mangle))]
 fn main() {
     ax_println!("Hypervisor ...");
 
     // A new address space for vm.
-    let mut uspace = axmm::new_user_aspace().unwrap();
+    let mut uspace = axmm::new_kernel_aspace().unwrap();
 
     // Load vm binary file into address space.
     if let Err(e) = load_vm_image("/sbin/skernel", &mut uspace) {

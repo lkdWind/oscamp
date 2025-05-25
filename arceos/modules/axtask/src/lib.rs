@@ -10,8 +10,8 @@
 //!   management and scheduling is used, as well as more task-related APIs.
 //!   Otherwise, only a few APIs with naive implementation is available.
 //! - `irq`: Interrupts are enabled. If this feature is enabled, timer-based
-//!    APIs can be used, such as [`sleep`], [`sleep_until`], and
-//!    [`WaitQueue::wait_timeout`].
+//!   APIs can be used, such as [`sleep`], [`sleep_until`], and
+//!   [`WaitQueue::wait_timeout`].
 //! - `preempt`: Enable preemptive scheduling.
 //! - `sched_fifo`: Use the [FIFO cooperative scheduler][1]. It also enables the
 //!   `multitask` feature if it is enabled. This feature is enabled by default,
@@ -29,9 +29,6 @@
 #![feature(doc_cfg)]
 #![feature(doc_auto_cfg)]
 #![feature(linkage)]
-#![feature(const_mut_refs)]
-#![feature(const_ptr_is_null)]
-#![feature(const_unsafecell_get_mut)]
 
 #[cfg(test)]
 mod tests;
@@ -42,6 +39,7 @@ cfg_if::cfg_if! {
         extern crate log;
         extern crate alloc;
 
+        #[macro_use]
         mod run_queue;
         mod task;
         mod task_ext;

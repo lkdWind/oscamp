@@ -11,8 +11,7 @@ pub mod irq;
 #[cfg(feature = "smp")]
 pub mod mp;
 
-extern "C" {
-    fn trap_vector_base();
+unsafe extern "C" {
     fn rust_main(cpu_id: usize, dtb: usize);
     #[cfg(feature = "smp")]
     fn rust_main_secondary(cpu_id: usize);
@@ -21,15 +20,17 @@ extern "C" {
 unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
     crate::mem::clear_bss();
     crate::cpu::init_primary(cpu_id);
-    crate::arch::set_trap_vector_base(trap_vector_base as usize);
+    #[cfg(feature = "uspace")]
+    riscv::register::sstatus::set_sum();
     self::time::init_early();
     rust_main(cpu_id, dtb);
 }
 
 #[cfg(feature = "smp")]
 unsafe extern "C" fn rust_entry_secondary(cpu_id: usize) {
-    crate::arch::set_trap_vector_base(trap_vector_base as usize);
     crate::cpu::init_secondary(cpu_id);
+    #[cfg(feature = "uspace")]
+    riscv::register::sstatus::set_sum();
     rust_main_secondary(cpu_id);
 }
 

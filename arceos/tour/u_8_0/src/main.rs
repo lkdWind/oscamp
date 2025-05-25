@@ -9,7 +9,7 @@ use std::thread;
 use std::io::{self, prelude::*};
 use std::fs::File;
 
-#[cfg_attr(feature = "axstd", no_mangle)]
+#[cfg_attr(feature = "axstd", unsafe(no_mangle))]
 fn main() {
     println!("Load app from fat-fs ...");
 
