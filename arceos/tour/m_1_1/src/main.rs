@@ -28,7 +28,7 @@ const APP_ENTRY: usize = 0x1000;
 #[cfg_attr(feature = "axstd", unsafe(no_mangle))]
 fn main() {
     // A new address space for user app.
-    let mut uspace = axmm::new_user_aspace().unwrap();
+    let mut uspace = axmm::new_kernel_aspace().unwrap();
 
     // Load user app binary file into address space.
     if let Err(e) = load_user_app(&mut uspace) {
@@ -42,7 +42,7 @@ fn main() {
     // Let's kick off the user process.
     let user_task = task::spawn_user_task(
         Arc::new(Mutex::new(uspace)),
-        UspaceContext::new(APP_ENTRY.into(), ustack_top),
+        UspaceContext::new(APP_ENTRY.into(), ustack_top, 0),
     );
 
     // Wait for user process to exit ...

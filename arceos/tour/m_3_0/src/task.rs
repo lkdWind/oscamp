@@ -55,8 +55,8 @@ pub fn spawn_user_task(aspace: Arc<Mutex<AddrSpace>>, uctx: UspaceContext) -> Ax
             let kstack_top = curr.kernel_stack_top().unwrap();
             info!(
                 "Enter user space: entry={:#x}, ustack={:#x}, kstack={:#x}",
-                curr.task_ext().uctx.get_ip(),
-                curr.task_ext().uctx.get_sp(),
+                curr.task_ext().uctx.ip(),
+                curr.task_ext().uctx.sp(),
                 kstack_top,
             );
             unsafe { curr.task_ext().uctx.enter_uspace(kstack_top) };

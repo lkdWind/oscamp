@@ -225,6 +225,16 @@ impl UspaceContext {
         Self(*trap_frame)
     }
 
+    /// Gets the instruction pointer.
+    pub const fn ip(&self) -> usize {
+        self.0.sepc
+    }
+
+    /// Gets the stack pointer.
+    pub const fn sp(&self) -> usize {
+        self.0.regs.sp
+    }
+    
     /// Enters user space.
     ///
     /// It restores the user registers and jumps to the user entry point

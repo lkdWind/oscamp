@@ -7,7 +7,7 @@ use axerrno::LinuxError;
 const SYS_EXIT: usize = 93;
 
 #[register_trap_handler(SYSCALL)]
-fn handle_syscall(tf: &TrapFrame, syscall_num: usize) -> isize {
+fn handle_syscall(tf: & mut TrapFrame, syscall_num: usize) -> isize {
     ax_println!("handle_syscall ...");
     let ret = match syscall_num {
         SYS_EXIT => {

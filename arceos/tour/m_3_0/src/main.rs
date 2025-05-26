@@ -29,7 +29,7 @@ const KERNEL_STACK_SIZE: usize = 0x40000; // 256 KiB
 #[cfg_attr(feature = "axstd", unsafe(no_mangle))]
 fn main() {
     // A new address space for user app.
-    let mut uspace = axmm::new_user_aspace().unwrap();
+    let mut uspace = axmm::new_kernel_aspace().unwrap();
 
     // Load user app binary file into address space.
     let entry = match load_user_app("/sbin/hello", &mut uspace) {
@@ -45,7 +45,7 @@ fn main() {
     // Let's kick off the user process.
     let user_task = task::spawn_user_task(
         Arc::new(Mutex::new(uspace)),
-        UspaceContext::new(entry, ustack_top),
+        UspaceContext::new(entry, ustack_top, 0),
     );
 
     // Wait for user process to exit ...

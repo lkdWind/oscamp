@@ -120,3 +120,22 @@ pub fn cpu_init() {
     }
     set_trap_vector_base(trap_vector_base as usize);
 }
+
+/// Bit 1: Supervisor Interrupt Enable
+const SIE_BIT: usize = 1 << 1;
+
+#[inline]
+pub fn local_irq_save_and_disable() -> usize {
+    let sstatus = sstatus::read().bits();
+    disable_irqs();
+    sstatus & SIE_BIT
+}
+
+#[inline]
+pub fn local_irq_restore(flags: usize) {
+    if flags & SIE_BIT != 0 {
+        enable_irqs();
+    } else {
+        disable_irqs();
+    }
+}
