@@ -21,6 +21,13 @@ const PHY_MEM_START: usize = 0x8000_0000;
 const PHY_MEM_SIZE: usize = 0x100_0000;
 const KERNEL_BASE: usize = 0x8020_0000;
 
+cfg_if::cfg_if! {
+    if #[cfg(target_arch = "riscv64")] {
+        const USER_ASPACE_BASE: usize = 0x0000;
+        const USER_ASPACE_SIZE: usize = 0x40_0000_0000;
+    }
+}
+
 use axmm::AddrSpace;
 use axhal::paging::MappingFlags;
 
@@ -32,7 +39,7 @@ fn main() {
     }
 
     // Setup AddressSpace and regions.
-    let mut aspace = AddrSpace::new_empty(VirtAddr::from(VM_ASPACE_BASE), VM_ASPACE_SIZE).unwrap();
+    let mut aspace = axmm::new_user_aspace(USER_ASPACE_BASE, USER_ASPACE_SIZE).unwrap();
 
     // Physical memory region. Full access flags.
     let mapping_flags = MappingFlags::from_bits(0xf).unwrap();

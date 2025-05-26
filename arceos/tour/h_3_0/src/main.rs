@@ -24,7 +24,7 @@ const KERNEL_BASE: usize = 0x8020_0000;
 use axmm::AddrSpace;
 use axhal::paging::MappingFlags;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 fn main() {
     info!("Starting virtualization...");
     unsafe {

@@ -255,7 +255,7 @@ impl UspaceContext {
         // Address of the top of the kernel stack after saving the trap frame.
         let kernel_trap_addr = kstack_top.as_usize() - core::mem::size_of::<TrapFrame>();
         unsafe {
-            core::arch::asm!(
+            core::arch::naked_asm!(
                 include_asm_macros!(),
                 "
                 mv      sp, {tf}
@@ -273,7 +273,6 @@ impl UspaceContext {
                 sret",
                 tf = in(reg) &(self.0),
                 kernel_trap_addr = in(reg) kernel_trap_addr,
-                options(noreturn),
             )
         }
     }

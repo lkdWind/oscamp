@@ -239,4 +239,4 @@ clean_c::
 .PHONY: all defconfig oldconfig \
 	build disasm run justrun debug \
 	clippy doc doc_check_missing fmt fmt_c unittest unittest_no_fail_fast \
-	disk_img clean clean_c
+	disk_img pflash_img clean clean_c

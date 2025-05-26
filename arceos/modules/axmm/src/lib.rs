@@ -13,7 +13,7 @@ pub use self::aspace::AddrSpace;
 pub use self::backend::Backend;
 
 use axerrno::{AxError, AxResult};
-use axhal::mem::phys_to_virt;
+use axhal::mem::{phys_to_virt,VirtAddr};
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
 use memory_addr::{PhysAddr, va};
@@ -68,4 +68,11 @@ pub fn init_memory_management() {
 /// Initializes kernel paging for secondary CPUs.
 pub fn init_memory_management_secondary() {
     axhal::paging::set_kernel_page_table_root(kernel_page_table_root());
+}
+
+/// Creates a new address space for user processes.
+pub fn new_user_aspace(user_aspace_base: usize, user_aspace_size: usize) -> AxResult<AddrSpace> {
+    let mut aspace = AddrSpace::new_empty(VirtAddr::from(user_aspace_base), user_aspace_size)?;
+    aspace.copy_mappings_from(&kernel_aspace().lock())?;
+    Ok(aspace)
 }

@@ -8,6 +8,7 @@ log = "0.4.21"
 axstd = { workspace = true, features = ["alloc", "paging", "fs", "multitask", "irq"] }
 axhal = { workspace = true }
 axmm = { workspace = true }
-riscv_vcpu = { git = "https://github.com/arceos-hypervisor/riscv_vcpu.git" }
+riscv_vcpu = { path = "../../modules/riscv_vcpu" }
 axerrno = "0.1"
 memory_addr = "0.3"
+cfg-if = "1.0"
